@@ -67,6 +67,7 @@ def processURL():
     refRange = ''
     result = ''
     flag = ''
+    test = 'test'
 
     x_name, x_flag, x_unit, x_range, x_result = 0, 0, 0, 0, 0
     y_name, y_flag, y_unit, y_range, y_result = 0, 0, 0, 0, 0
