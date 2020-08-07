@@ -28,8 +28,8 @@ def processURL():
     datadict = json.loads(data)
 
     path = datadict['url']
-    print(type(path))
-    print(path)
+    # print(type(path))
+    # print(path)
 
     # url = request.args.get('url')
     # str1 = url.split('files/')
@@ -132,7 +132,7 @@ def processURL():
 
     # extract text and write a text file
     text = pytesseract.image_to_string(img, lang=language, config=custom_config)
-    print("final text", text)
+    # print("final text", text)
     # return text
 
     for line in text.splitlines():
@@ -167,7 +167,7 @@ def processURL():
                 count = count + 1
 
         if count == 4:
-            print(count, " Column Headers")
+            # print(count, " Column Headers")
             break
 
     # coordinates
@@ -231,9 +231,9 @@ def processURL():
     # array
     array = {testName.upper(): testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
              unit.upper(): unitTableData, refRange.upper(): rangeTableData}
-    print(array)
 
-    return {"array": array}
+    json_outout = json.dumps(array)
+    return json_outout
 
 
 if __name__ == '__main__':
