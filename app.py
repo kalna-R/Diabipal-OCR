@@ -85,7 +85,7 @@ def processURL():
     image_bytes = BytesIO(response.content)
 
     img = Image.open(image_bytes)
-    img.show()
+    # img.show()
 
     # rescale image
     def set_image_dpi(file_path):
