@@ -2,8 +2,11 @@ import base64
 import tempfile
 import urllib.request
 from io import BytesIO
+from flask_cors import CORS
+import json
+from json import JSONEncoder
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import requests
 
 import cv2
@@ -13,24 +16,33 @@ from pytesseract import pytesseract, Output
 from tabulate import tabulate
 
 app = Flask(__name__)
+cors = CORS(app)
 
 
 #  ?url=
-@app.route('/url', methods=['POST'])
+@app.route('/url', methods=['POST', 'GET'])
 def processURL():
     # get path from url
-    url = request.args.get('url')
-    str1 = url.split('files/')
-    str2 = str1[0] + 'files%2F'
-    str3 = str1[1].split('?alt')
-    url1 = str2 + str3[0]
+
+    data = request.data
+    datadict = json.loads(data)
+
+    path = datadict['url']
+    print(type(path))
+    print(path)
+
+    # url = request.args.get('url')
+    # str1 = url.split('files/')
+    # str2 = str1[0] + 'files%2F'
+    # str3 = str1[1].split('?alt')
+    # url1 = str2 + str3[0]
 
     # return a json object with image info from the 'url'
-    r = requests.get(url1).json()
-    token = r['downloadTokens']
+    # r = requests.get(url1).json()
+    # token = r['downloadTokens']
 
     # complete path for the image in firebase storage
-    path = url1 + '?alt=media&token=' + token
+    # path = url1 + '?alt=media&token=' + token
 
     IMAGE_SIZE = 1800
     BINARY_THRESHOLD = 180
@@ -198,20 +210,20 @@ def processURL():
                 x_result = x
                 y_result = y
 
-            if x_name == x or x_name == x+1 or x_name == x-1:
+            if x_name == x or x_name == x + 1 or x_name == x - 1:
                 testNameTableData = dict['text'][i]
 
-            if x_result == x or x_result == x+1 or x_result == x-1:
+            if x_result == x or x_result == x + 1 or x_result == x - 1:
                 resultTableData = dict['text'][i]
 
-            if x_flag == x or x_flag == x+1 or x_flag == x-1:
+            if x_flag == x or x_flag == x + 1 or x_flag == x - 1:
                 flagTableData = dict['text'][i]
 
-            if x_range == x or x_range == x+1 or x_range == x-1:
+            if x_range == x or x_range == x + 1 or x_range == x - 1:
                 rangeTableData = dict['text'][i]
 
-        # get each columns x coordinate
-        # find values starting with that x coordinate
+            # get each columns x coordinate
+            # find values starting with that x coordinate
 
             # data for the table
             table = [[testNameTableData, resultTableData, flagTableData, unitTableData, rangeTableData]]
@@ -225,4 +237,4 @@ def processURL():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug="true")
