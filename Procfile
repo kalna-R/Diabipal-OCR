@@ -1,1 +1,1 @@
-web gunicorn processURL: app
+web gunicorn app: app
