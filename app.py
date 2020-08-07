@@ -229,7 +229,9 @@ def processURL():
             table = [[testNameTableData, resultTableData, flagTableData, unitTableData, rangeTableData]]
 
     # array
-    array = {testName.upper(): testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
+    # array = {testName.upper(): testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
+             # unit.upper(): unitTableData, refRange.upper(): rangeTableData}
+    array = {test: testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
              unit.upper(): unitTableData, refRange.upper(): rangeTableData}
 
     json_outout = json.dumps(array)
