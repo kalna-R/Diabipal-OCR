@@ -11,9 +11,16 @@ import requests
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageEnhance
 from pytesseract import pytesseract, Output
 from tabulate import tabulate
+
+import pandas as pd
+import numpy as np
+
+import matplotlib.pyplot as plt
+# library to create a network
+import networkx as nx
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -22,28 +29,6 @@ cors = CORS(app)
 #  ?url=
 @app.route('/url', methods=['POST', 'GET'])
 def processURL():
-    # get path from url
-
-    data = request.data
-    datadict = json.loads(data)
-
-    path = datadict['url']
-    # print(type(path))
-    # print(path)
-
-    # url = request.args.get('url')
-    # str1 = url.split('files/')
-    # str2 = str1[0] + 'files%2F'
-    # str3 = str1[1].split('?alt')
-    # url1 = str2 + str3[0]
-
-    # return a json object with image info from the 'url'
-    # r = requests.get(url1).json()
-    # token = r['downloadTokens']
-
-    # complete path for the image in firebase storage
-    # path = url1 + '?alt=media&token=' + token
-
     IMAGE_SIZE = 1800
     BINARY_THRESHOLD = 180
 
@@ -78,38 +63,62 @@ def processURL():
     resultTableData = ''
     flagTableData = ''
 
-    # define the path to the image
-    # path = r'E:\Reserach\Resources\Dataset\FBS\Glucose-Test-Results.jpg'
-    # load the image from the specified location/directory using openCV
-    # image = cv2.imread(path)
+    # get the path to the image
+    data = request.data
+    datadict = json.loads(data)
+    path = datadict['url']
+
+    # send a GET request to the specified path & get the response in bytes
     response = requests.get(path)
     image_bytes = BytesIO(response.content)
 
-    img = Image.open(image_bytes)
-    # img.show()
+    # open with PIL
+    image_pil = Image.open(image_bytes)
+    # image_pil.show()
+
+    # load using opencv
+    req = urllib.request.urlopen(path)
+    arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
+    image_cv = cv2.imdecode(arr, -1)
 
     # rescale image
-    def set_image_dpi(file_path):
-        im = Image.open(file_path)
-        length_x, width_y = im.size
+    def set_image_dpi(original_image):
+        # set length/width
+        length_x, width_y = original_image.size
         factor = max(1, int(IMAGE_SIZE / length_x))
         size = factor * length_x, factor * width_y
-        im_resized = im.resize(size, Image.ANTIALIAS)
+        # resize
+        im_resized = original_image.resize(size, Image.LANCZOS)
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-        temp_filename = temp_file.name
-        im_resized.save(temp_filename, dpi=(300, 300))
-        return temp_filename
+        # set dpi to 300
+        im_resized.save(temp_file.name, dpi=(300, 300))
+        # im_resized.show()
+        return temp_file.name
 
+    # get grayscale image
+    def get_grayscale(image):
+        return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # enhance brightness
+    def enhance_brightness(image_pil):
+        enhance = ImageEnhance.Contrast(image_pil).enhance(1.5)
+        # enhance.convert('RGB')
+        opencv_enhanced = np.asarray(enhance)
+        # opencv_enhanced = opencv_enhanced[:, :, ::-1].copy()
+        gray_bright = get_grayscale(opencv_enhanced)
+        return gray_bright
+
+    enhanced_img = enhance_brightness(image_pil)
+
+    # cv2.imshow("Enhanced cv2", enhanced_img)
+
+    # grey should be passes to threshold
     def image_smoothening(img):
         ret1, th1 = cv2.threshold(img, BINARY_THRESHOLD, 255, cv2.THRESH_BINARY)
         ret2, th2 = cv2.threshold(th1, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         blur = cv2.GaussianBlur(th2, (1, 1), 0)
         ret3, th3 = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         return th3
-
-    # def inverse(img):
-    #     ret, tv1 = cv2.threshold(img, 180, 255, cv2.THRESH_BINARY_INV)
-    #     return ret
 
     def remove_noise_and_smooth(file_path):
         # load the image in grayscale mode using 0
@@ -123,18 +132,17 @@ def processURL():
         or_image = cv2.bitwise_or(img, closing)
         return or_image
 
-    def process_image_for_ocr(file_path):
-        temp_filename = set_image_dpi(file_path)
+    def process_image_for_ocr(original_img):
+        temp_filename = set_image_dpi(original_img)
         im_new = remove_noise_and_smooth(temp_filename)
         return im_new
 
     # processed image
-    # temp = process_image_for_ocr(path)
+    temp = process_image_for_ocr(image_pil)
 
     # extract text and write a text file
-    text = pytesseract.image_to_string(img, lang=language, config=custom_config)
-    # print("final text", text)
-    # return text
+    text = pytesseract.image_to_string(temp, lang=language, config=custom_config)
+    print(text)
 
     for line in text.splitlines():
         for item in testNameColumn:
@@ -172,7 +180,7 @@ def processURL():
             break
 
     # coordinates
-    gray = cv2.cvtColor(np.float32(img), cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(np.float32(image_pil), cv2.COLOR_BGR2GRAY)
     # Returns result containing box boundaries, confidences
     dict = pytesseract.image_to_data(gray, output_type=Output.DICT, config=custom_config)
     # dict = {'level': [1,1,2], 'text':['','']},
@@ -186,21 +194,21 @@ def processURL():
         # color = (0, 0, 255)
         # thickness
         # image = cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
+        # print("****", dict['text'][i])
         if len(dict['text'][i].lower()) >= 3:
 
+            # x value of the test header
             if testName.lower().find(dict['text'][i].lower()) != -1 and (dict['text'][i] != ''):
                 if testName.startswith('test'):
                     if dict['text'][i].lower() == 'test':
                         x_name = x
                         y_name = y
-            if flag.lower().find(dict['text'][i].lower()) != -1 and (dict['text'][i] != ''):
-                x_flag = x
-                y_flag = y
 
+            # x value of the header
             if unit.lower().find(dict['text'][i].lower()) != -1 and (dict['text'][i] != ''):
                 x_unit, y_unit = x, y
 
+            # x value of the header
             if refRange.lower().find(dict['text'][i].lower()) != -1 and (dict['text'][i] != ''):
                 if refRange.startswith('ref'):
                     if dict['text'][i].lower() == 'reference':
@@ -208,35 +216,220 @@ def processURL():
                         y_range = y
 
             if result.lower().find(dict['text'][i].lower()) != -1 and (dict['text'][i] != ''):
-                x_result = x
-                y_result = y
+                # if result.startswith('result'):
+                #     if dict['text'][i].lower() == 'result':
+                        x_result = x
+                        y_result = y
 
-            if x_name == x or x_name == x + 1 or x_name == x - 1:
+            if x_name == x or x_name == x + 2 or x_name == x - 1:
                 testNameTableData = dict['text'][i]
 
             if x_result == x or x_result == x + 1 or x_result == x - 1:
+                # print(dict['text'][i])
                 resultTableData = dict['text'][i]
-
-            if x_flag == x or x_flag == x + 1 or x_flag == x - 1:
-                flagTableData = dict['text'][i]
 
             if x_range == x or x_range == x + 1 or x_range == x - 1:
                 rangeTableData = dict['text'][i]
 
+            if x_unit == x or x_unit == x + 1 or x_unit == x - 1:
+                unitTableData = dict['text'][i]
+
+            # if x_flag == x or x_flag == x + 1 or x_flag == x - 1:
+            #     flagTableData = dict['text'][i]
+
             # get each columns x coordinate
             # find values starting with that x coordinate
 
-            # data for the table
-            table = [[testNameTableData, resultTableData, flagTableData, unitTableData, rangeTableData]]
+        ocr_array = {"TEST NAME": testNameTableData.lower(), "RESULTS": resultTableData.lower(), "UNIT": unitTableData,
+                 "RANGE": rangeTableData.lower()}
 
-    # array
-    # array = {testName.upper(): testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
-             # unit.upper(): unitTableData, refRange.upper(): rangeTableData}
-    array = {test: testNameTableData, result.upper(): resultTableData, flag.upper(): flagTableData,
-             unit.upper(): unitTableData, refRange.upper(): rangeTableData}
+    print("OCR output ", ocr_array)
 
-    json_outout = json.dumps(array)
-    return json_outout
+    # *****************
+    # funtion to read file
+    def readFile(path):
+
+        # read data from the excel file
+        dataframe = pd.read_csv(path)
+        df = dataframe.fillna('')
+
+        return df.astype(str)
+
+    # function to extract subject, relation and object for similar terms
+    def processSynonyms(row):
+        subj = ''
+        objct = ''
+        relation = ''
+        triple = []
+
+        if row['Synonym'] != '':
+            subj = row['TestName']
+            objct = row['Synonym']
+            relation = 'similar'
+
+            triple = [subj.lower(), relation, objct.lower()]
+            return triple
+        else:
+            return;
+
+    # To-do- spelling corretion survice/service
+    # function to extract subject, relation and object for measurement unit
+    def processUnits(row):
+        subj = ''
+        objct = ''
+        relation = ''
+        triple = []
+
+        if row['Unit'] != '':
+            subj = row['TestName']
+            objct = row['Unit']
+            relation = 'unit'
+
+            triple = [subj.lower(), relation, objct]
+            # print(triple)
+            return triple
+
+        else:
+            return;
+
+    # # function to extract subject, relation and object for range
+    # def processRange(text):
+    #
+    #     subject = ''
+    #     obj = ''
+    #     relation = ''
+    #     # holds the dependency tag of the previous token
+    #     previous_token = ""
+    #
+    #     # iterate through every word in sentence
+    #     for token in text:
+    #
+    #         # extract the subject
+    #         if token.dep_ == "ROOT":
+    #             # if previous dependency tag is null then the root is the subject
+    #             if not previous_token:
+    #                 subject = token.text
+    #
+    #         # extract the object
+    #         # if a num is followed by a sym, save it temporarily as a object
+    #         if token.pos_ == "SYM" or token.pos_ == "PUNCT":
+    #             if previous_pos == "NUM":
+    #                 obj = previous_text + "" + token.text
+    #
+    #         # if object!=null & obejct is followed by a sym, upadate the object variable
+    #         if obj:
+    #             if token.pos_ != "SYM":
+    #                 obj = obj + token.text
+    #
+    #         # asssign the current dep & pos tag as the previous tokens
+    #         previous_token = token.dep_
+    #         previous_text = token.text
+    #         previous_pos = token.pos_
+    #     #         print(subject,"==>",obj)
+    #
+    #     relation = "in range"
+    #
+    #     if (obj.strip(), relation.strip(), subject.strip()):
+    #         #         print(type(obj.strip()), "====")
+    #         return [subject.strip(), relation.strip(), obj.strip()]
+    #     else:
+    #         return;
+
+    # draw the knowledge graph
+    def printGraph(triples):
+
+        # initialize graph object
+        G = nx.MultiDiGraph()
+
+        # automatically create nodes if they don't exist when adding an edge
+        for triple in triples:
+            G.add_edge(triple[0], triple[2], relation=triple[1])
+
+        node_color = [G.degree(v) for v in G]
+        node_size = [1500 * G.degree(v) for v in G]
+
+        # k = distance between edges
+        pos = nx.spring_layout(G, k=10)
+
+        nx.draw(G, pos, edge_color='black', node_size=node_size, node_color=node_color, alpha=0.9,
+                cmap=plt.cm.Blues, labels={node: node for node in G.nodes()})
+        nx.draw_networkx_edge_labels(G, pos, label_pos=0.5, font_size=10, font_color='k', font_family='sans-serif',
+                                     font_weight='normal')
+        # plt.axis('off')
+        # plt.show()
+
+        return G
+
+    def hasNode(G, node):
+
+        in_edges = G.in_edges(nbunch=node, data='relation', keys=True)
+
+        out_edges = G.out_edges(nbunch=node, data='relation', keys=True)
+
+        return in_edges, out_edges
+
+    # corrections
+    # data => output array of the ocr
+    def wordCorrection(G, data):
+
+        in_nodes, out_nodes = hasNode(G, data['TEST NAME'])
+
+        if in_nodes:
+            for u, v, keys, relation in in_nodes:
+                # print("values for glucose", u, v)
+
+                # units correction
+                if relation == 'unit' and data['UNIT'] != v:
+                    data['UNIT'] = v
+
+                # range correction
+                if relation == 'range' and data['RANGE'] != v:
+                    data['RANGE'] = v
+
+            return data
+
+        if out_nodes:
+            for u1, v1, keys, relation in out_nodes:
+                # print("values for glucose", u1, v1)
+
+                # units correction
+                if relation == 'unit' and data['UNIT'] != v1:
+                    data['UNIT'] = v1
+
+                # range correction
+                if relation == 'range' and data['RANGE'] != v1:
+                    data['RANGE'] = v1
+
+            return data
+
+    triples = []
+
+    # path to the file
+    path = r'https://docs.google.com/spreadsheets/d/e/2PACX-1vRFOFNO-1FTpeJc-u0vHtzh8VrO7cg4M19Nxff82FCc-QAA1lTTtLFXyuWzmKvsrUbkCPKuMEjdfC27/pub?output=csv'
+
+    # dataframe of data
+    df = readFile(path)
+
+    # process row by row to find triples
+    for index, row in df.iterrows():
+
+        # identify synonyms
+        synonyms = processSynonyms(row)
+        if synonyms:
+            triples.append(synonyms)
+
+        # identify units
+        units = processUnits(row)
+        if units:
+            triples.append(units)
+
+    graph = printGraph(triples)
+    out_array = wordCorrection(graph, ocr_array)
+
+    # *************
+    final_array = json.dumps(out_array)
+    print("Final array", final_array)
+    return final_array
 
 
 if __name__ == '__main__':
