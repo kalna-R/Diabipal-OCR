@@ -7,4 +7,4 @@ Includes image processing algorithms to improve image quality and Tesseract OCR 
 
 This project is hosted on Heroku 
 
-    https://dashboard.heroku.com/apps/diabipal-ocr-v2 
+    https://diabipal-ocr-v2.herokuapp.com/
