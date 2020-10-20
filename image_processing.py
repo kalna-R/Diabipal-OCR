@@ -66,8 +66,8 @@ def process_image_less_noise(cv_image):
 
     dest_not1 = cv2.bitwise_and(gray, th1, mask=None)
 
-    cv2.imshow('Processed Image ', dest_not1)
-    cv2.waitKey(0)
+    # cv2.imshow('Processed Image ', dest_not1)
+    # cv2.waitKey(0)
 
     return dest_not1
 
