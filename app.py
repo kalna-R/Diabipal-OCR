@@ -32,7 +32,8 @@ def processURL():
 
     #  if the result array is empty apply more image processing techniques
     if result:
-        response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
+        # "http://127.0.0.1:3000/corrections"
+        response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=result)
         print(response.json())
         if response.json():
             return response.json()
@@ -53,7 +54,8 @@ def processURL():
         out_array = process_ocr(out_image)
 
         if out_array:
-            response = requests.post(url="http://127.0.0.1:3000/corrections", data=out_array)
+            # "http://127.0.0.1:3000/corrections"
+            response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=out_array)
             print("Response", response.json())
             if response:
                 return response.json()
