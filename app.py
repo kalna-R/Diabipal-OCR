@@ -20,49 +20,39 @@ def processURL():
     # image processing applied image
     processed_image = process_image_less_noise(image_cv)
 
-    # # returns text as string
-    # text = string_output(processed_image)
-    #
-    # # returns a dictionary of box boundaries
-    # boundary = data_output(processed_image)
-
     # extract text using ocr engine
     # returns an array of test name, result, unit, range
     result = process_ocr(processed_image)
 
     #  if the result array is empty apply more image processing techniques
     if result:
-        # "http://127.0.0.1:3000/corrections"
+        # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
         response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=result)
-        print(response.json())
+        # print(response.json())
+        # returns a json object
         if response.json():
+            print("Response", response.json())
             return response.json()
         else:
-            return 'error'
+            return {'Error'}
     else:
         # image processing applied image
         out_image = process_image_for_ocr(get_image_pil(request))
-
-        # # returns text as string
-        # text = string_output(out_image)
-        #
-        # # returns a dictionary of box boundaries
-        # boundary = data_output(out_image)
 
         # extract text using ocr engine
         # returns an array of test name, result, unit, range
         out_array = process_ocr(out_image)
 
         if out_array:
-            # "http://127.0.0.1:3000/corrections"
+            # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
             response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=out_array)
-            print("Response", response.json())
             if response:
+                print("Response", response.json())
                 return response.json()
             else:
-                return 'error'
+                return {'Error'}
         else:
-            return 'Unable to process your report!'
+            return {'Error'}
 
 
 if __name__ == '__main__':

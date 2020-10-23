@@ -3,6 +3,7 @@ import re
 
 import cv2
 # from pandas import np
+from flask import jsonify
 from pytesseract import pytesseract, Output
 
 # custom configurations
@@ -65,7 +66,7 @@ def process_ocr(temp):
 
         # if the table header is found, find x,y coordinates for each column name
         if count >= 3:
-            print("Table headers", count)
+            # print("Table headers", count)
 
             # spelling correction to identify headers
             # spell = Speller(lang='en')
@@ -103,19 +104,19 @@ def process_ocr(temp):
                         # check each array item to find col headers
                         # save x,w values of the column header
                         if col in testNameColumn:
-                            print("header name", col)
+                            # print("header name", col)
                             x_testName, y_testName, w_testName, h_testName = x, y, w, h
 
                         if col in resultColumn:
-                            print("header result", col)
+                            # print("header result", col)
                             x_result, w_result = x, w
 
                         if col in unitColumn:
-                            print("header unit", col)
+                            # print("header unit", col)
                             x_unit, w_unit = x, w
 
                         if col in rangeColumn:
-                            print("header range", col)
+                            # print("header range", col)
                             x_range, w_range = x, w
 
                 # execute only if  y values are greater than the column header
@@ -125,22 +126,22 @@ def process_ocr(temp):
                     if x < (x_testName + w_testName) or x < x_result:
                         testName = dict['text'][i]
                         name_y = y
-                        print("data name", testName)
+                        # print("data name", testName)
 
                     if (x_result - 5) < x < (x_result + w_result):
                         result = dict['text'][i]
                         result_y = y
-                        print("data result", result)
+                        # print("data result", result)
 
                     if (x_unit - 5) < x < (x_unit + w_unit):
                         unit = dict['text'][i]
                         unit_y = y
-                        print("data unit", unit)
+                        # print("data unit", unit)
 
                     if (x_range - 5) < x < (x_range + w_range):
                         refRange = dict['text'][i]
                         range_y = y
-                        print("data range", refRange)
+                        # print("data range", refRange)
 
                     #  check if all data are taken from the same line by the y value
                     if (name_y + 4 <= result_y or name_y - 4 <= result_y) and (
@@ -156,10 +157,10 @@ def process_ocr(temp):
                         #     ocr_array = {"TEST NAME": testName, "RESULTS": result, "UNIT": unit, "RANGE": refRange}
                         #     break
 
-        # # if unable to locate the header, raise an error
-        # else:
-        #     return 'Error: Unable to locate header'
-        #     # raise Exception("Sorry we are unable to process your report")
+        # if unable to locate the header, raise an error
+        if count < 3:
+            return jsonify({'Error: Please insert a clear image'})
+            # raise Exception("Sorry we are unable to process your report")
 
     print(ocr_array)
     return json.dumps(ocr_array)
