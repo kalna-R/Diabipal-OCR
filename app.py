@@ -24,7 +24,7 @@ def processURL():
     # returns an array of test name, result, unit, range
     result = process_ocr(processed_image)
 
-    #  if the result array is empty apply more image processing techniques
+    # word correction using knowledge graph
     if result:
         # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
         response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=result)
@@ -35,6 +35,8 @@ def processURL():
             return response.json()
         else:
             return {'Error'}
+
+    #  if the result array is empty apply more image processing techniques
     else:
         # image processing applied image
         out_image = process_image_for_ocr(get_image_pil(request))
@@ -46,7 +48,7 @@ def processURL():
         if out_array:
             # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
             response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=out_array)
-            if response:
+            if response.json():
                 print("Response", response.json())
                 return response.json()
             else:
