@@ -158,9 +158,15 @@ def process_ocr(temp):
                         #     break
 
         # if unable to locate the header, raise an error
-        if count < 3:
-            return json.dumps({'Error': 'Please insert a clear image'})
-            # raise Exception("Sorry we are unable to process your report")
+        # if count < 3:
+        #     return json.dumps({'Error': 'Please insert a clear image'})
+        #     # raise Exception("Sorry we are unable to process your report")
 
-    print("OCR array", ocr_array)
-    return json.dumps(ocr_array)
+    if ocr_array:
+        print("OCR array", ocr_array)
+        return json.dumps(ocr_array)
+
+    # if ocr_array:
+    #     return json.dumps(ocr_array)
+    # else:
+    #     return json.dumps(error)
