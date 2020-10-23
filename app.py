@@ -30,7 +30,7 @@ def processURL():
         response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=result)
         # print(response.json())
         # returns a json object
-        if response.json():
+        if response():
             print("Response", response.json())
             return response.json()
         else:
