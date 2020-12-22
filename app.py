@@ -30,10 +30,11 @@ def processURL():
 
     # word correction using knowledge graph
     if result:
+        print("Making API call to knowledge graph...")
         # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
         response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=result)
-        print(type(response), response)
-        # print(response.json())
+        print("Status from the KG API: ", response.status_code)
+
         # returns a json object
         if response.json():
             print("Response", response.json())
@@ -54,8 +55,11 @@ def processURL():
             return jsonify({'Error': 'Unable to identify your report. Please try again'})
 
         if out_array:
+            print("Making API call to knowledge graph...")
             # response = requests.post(url="http://127.0.0.1:3000/corrections", data=result)
             response = requests.post(url="https://diabipal-knowledge-graph.herokuapp.com/corrections", data=out_array)
+            print("Status code of the response KG API: ", response.status_code)
+
             if response.json():
                 print("Response", response.json())
                 return response.json()
