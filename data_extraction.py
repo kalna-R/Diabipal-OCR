@@ -91,6 +91,12 @@ def process_ocr(temp):
         #     arr, arr_Corrected = string_matching(line)
         #     count = len(arr)
 
+        # if unable to locate the header, raise an error
+        # if count < 3:
+        #     return
+        #     return json.dumps({'Error': 'Please insert a clear image'})
+        #     # raise Exception("Sorry we are unable to process your report")
+
         # if the table header is found, find x,y coordinates for each column name
         if count >= 3:
             # print("Table headers", count)
@@ -148,45 +154,33 @@ def process_ocr(temp):
                     if x < (x_testName + w_testName) or x < x_result:
                         testName = dict['text'][i]
                         name_y = y
-                        # print("data name", testName)
 
                     if (x_result - 5) < x < (x_result + w_result):
                         result = dict['text'][i]
                         result_y = y
-                        # print("data result", result)
 
                     if (x_unit - 5) < x < (x_unit + w_unit):
                         unit = dict['text'][i]
                         unit_y = y
-                        # print("data unit", unit)
 
                     if (x_range - 5) < x < (x_range + w_range):
                         refRange = dict['text'][i]
                         range_y = y
-                        # print("data range", refRange)
 
                     #  check if all data are taken from the same line by the y value
                     if (name_y + 4 <= result_y or name_y - 4 <= result_y) and (
                             range_y + 4 <= result_y or range_y - 4 <= result_y):
                         # break the loop if values are found
                         if (testName and result and refRange != '') or (testName and result and unit != ''):
-                            # print(testName, result, unit, ":", refRange)
                             ocr_array = {"TEST NAME": testName, "RESULTS": result, "UNIT": unit, "RANGE": refRange}
-                            break
+                            # break
+                            # return ocr_array
 
-                        # if testName and result and unit != '':
-                        #     # print(testName, result, unit, ":", refRange)
-                        #     ocr_array = {"TEST NAME": testName, "RESULTS": result, "UNIT": unit, "RANGE": refRange}
-                        #     break
-
-        # if unable to locate the header, raise an error
-        # if count < 3:
-        #     return json.dumps({'Error': 'Please insert a clear image'})
-        #     # raise Exception("Sorry we are unable to process your report")
-
-    if ocr_array:
-        print("OCR array", ocr_array)
-        return json.dumps(ocr_array)
+                            if ocr_array:
+                                print("OCR array", ocr_array)
+                                return json.dumps(ocr_array)
+                            else:
+                                return
 
 # # append words of the line to the array
 # titleArray.append(col)
