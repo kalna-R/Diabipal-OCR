@@ -8,6 +8,9 @@ from flask import Flask, request, jsonify
 from image_processing import process_image_less_noise, process_image_for_ocr, get_image_cv, get_image_pil
 from data_extraction import process_ocr
 
+from rq import Queue
+from worker import conn
+
 app = Flask(__name__)
 cors = CORS(app)
 
@@ -68,6 +71,10 @@ def processURL():
         else:
             return {'Error'}
 
+
+# send jobs to Redis
+q = Queue(connection=conn)
+result = q.enqueue(processURL, 'http://heroku.com')
 
 if __name__ == '__main__':
     app.run(debug="true")
