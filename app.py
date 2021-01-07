@@ -3,7 +3,7 @@ import json
 import requests
 from flask_cors import CORS
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, copy_current_request_context
 
 from image_processing import process_image_less_noise, process_image_for_ocr, get_image_cv, get_image_pil
 from data_extraction import process_ocr
@@ -17,6 +17,7 @@ cors = CORS(app)
 
 #  ?url=
 @app.route('/url', methods=['POST', 'GET'])
+@copy_current_request_context
 def processURL():
     # load image from the url
     image_cv = get_image_cv(request)
@@ -75,7 +76,8 @@ def processURL():
 # create RQ queue
 q = Queue(connection=conn)
 # send jobs to Redis
-result = q.enqueue(processURL)
+result = q.enqueue(processURL, result_ttl=80)
+print(result)
 
 if __name__ == '__main__':
     app.run(debug="true")
