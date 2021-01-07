@@ -72,9 +72,10 @@ def processURL():
             return {'Error'}
 
 
-# send jobs to Redis
+# create RQ queue
 q = Queue(connection=conn)
-result = q.enqueue(processURL, 'http://heroku.com')
+# send jobs to Redis
+result = q.enqueue(processURL)
 
 if __name__ == '__main__':
     app.run(debug="true")
